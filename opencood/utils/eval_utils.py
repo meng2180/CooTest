@@ -65,6 +65,7 @@ def caluclate_tp_fp(det_boxes, det_score, gt_boxes, result_stat, iou_thresh, sel
     # fp, tp and gt in the current frame
     fp = []
     tp = []
+    fn = len(gt_boxes)
 
     if det_boxes is not None:
         # convert bounding boxes to numpy array
@@ -77,6 +78,8 @@ def caluclate_tp_fp(det_boxes, det_score, gt_boxes, result_stat, iou_thresh, sel
         det_polygon_list = []
         gt_polygon_list = []
         det_score_new = []
+
+        
 
         # remove the bbx out of rangeb
         for i in range(len(det_polygon_list_origin)):
@@ -116,6 +119,7 @@ def caluclate_tp_fp(det_boxes, det_score, gt_boxes, result_stat, iou_thresh, sel
             # print(len(ious))
             gt_polygon_list.pop(gt_index)
             # actual_position.pop(gt_index)
+        
     else:
         gt = gt_boxes.shape[0]
     # print(f"fp = {fp}")
@@ -128,6 +132,8 @@ def caluclate_tp_fp(det_boxes, det_score, gt_boxes, result_stat, iou_thresh, sel
         result_stat[iou_thresh]['fp'] += fp
         result_stat[iou_thresh]['tp'] += tp
         result_stat[iou_thresh]['gt'] += gt
+    
+    return fn
 
 
 def calculate_ap(result_stat, iou):
@@ -201,12 +207,15 @@ def eval_final_results(result_stat, save_path, range=""):
 def calculate_coop_error(det_boxes, det_score, 
                          pred_boxes, pred_score, 
                          gt_boxes, iou_thresh,
-                         left_range=-float('inf'), right_range=float('inf')):
+                         left_range=-float('inf'), right_range=float('inf'),
+                         score_stat=None):
     det_match_dict = {}
     pred_match_dict = {}
+    det_score_stat = {}
     coop_error = 0
     pred_right = 0
     det_right = 0
+    score_stat = score_stat
 
     if det_boxes is not None:
         # convert bounding boxes to numpy array
@@ -249,6 +258,7 @@ def calculate_coop_error(det_boxes, det_score,
                 continue
             gt_index = np.argmax(ious)
             det_match_dict[gt_index] = True
+            det_score_stat[gt_index] = det_score_new[score_order_descend[i]]
             det_right += 1
             gt_polygon_list[gt_index] = [(0., 0.), (0., 0.), (0., 0.), (0., 0.)]
     else:
@@ -301,17 +311,65 @@ def calculate_coop_error(det_boxes, det_score,
                 coop_error += 1
         if coop_error is None:
             coop_error = 0
+        if score_stat is not None:
+            for key in det_score_stat:
+                score = det_score_stat[key]
+                if score >= 0 and score < 0.1:
+                    score_stat['0.0-0.1'] += 1
+                elif score >= 0.1 and score < 0.2:
+                    score_stat['0.1-0.2'] += 1
+                elif score >= 0.2 and score < 0.3:
+                    score_stat['0.2-0.3'] += 1
+                elif score >= 0.3 and score < 0.4:
+                    score_stat['0.3-0.4'] += 1
+                elif score >= 0.4 and score < 0.5:
+                    score_stat['0.4-0.5'] += 1
+                elif score >= 0.5 and score < 0.6:
+                    score_stat['0.5-0.6'] += 1
+                elif score >= 0.6 and score < 0.7:
+                    score_stat['0.6-0.7'] += 1
+                elif score >= 0.7 and score < 0.8:
+                    score_stat['0.7-0.8'] += 1
+                elif score >= 0.8 and score < 0.9:
+                    score_stat['0.8-0.9'] += 1
+                elif score >= 0.9 and score <= 1.0:
+                    score_stat['0.9-1.0'] += 1
         return coop_error
     
     for i in det_match_dict:
         if i not in pred_match_dict.keys():
             coop_error += 1
+            if score_stat is not None:
+                score = det_score_stat[i]
+                if score >= 0 and score < 0.1:
+                    score_stat['0.0-0.1'] += 1
+                elif score >= 0.1 and score < 0.2:
+                    score_stat['0.1-0.2'] += 1
+                elif score >= 0.2 and score < 0.3:
+                    score_stat['0.2-0.3'] += 1
+                elif score >= 0.3 and score < 0.4:
+                    score_stat['0.3-0.4'] += 1
+                elif score >= 0.4 and score < 0.5:
+                    score_stat['0.4-0.5'] += 1
+                elif score >= 0.5 and score < 0.6:
+                    score_stat['0.5-0.6'] += 1
+                elif score >= 0.6 and score < 0.7:
+                    score_stat['0.6-0.7'] += 1
+                elif score >= 0.7 and score < 0.8:
+                    score_stat['0.7-0.8'] += 1
+                elif score >= 0.8 and score < 0.9:
+                    score_stat['0.8-0.9'] += 1
+                elif score >= 0.9 and score <= 1.0:
+                    score_stat['0.9-1.0'] += 1
+                print(f"score = {score}")
           
     if coop_error is None:
         coop_error = 0
 
-    return coop_error
+
+    return coop_error, len(gt_boxes) - pred_right
     
+
 def calculate_select_param(det_boxes, det_score, pred_boxes):
     if det_boxes is not None and \
         pred_boxes is not None:
