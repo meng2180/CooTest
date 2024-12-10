@@ -54,7 +54,12 @@ def main():
         'image mode or video mode'
 
     hypes = yaml_utils.load_yaml(None, opt)
+
+    # set test dataset path
+    hypes['validate_dir'] = 'test'
+
     print('Dataset Building')
+
     opencood_dataset = build_dataset(hypes, visualize=True, train=False,
                                      isSim=opt.isSim, dataAugment=opt.data_augment)
         
@@ -78,7 +83,7 @@ def main():
     _, model = train_utils.load_saved_model(saved_path, model)
     model.eval()
 
-    # Create the dictionary for evaluation
+    # Create the dictionaries for evaluation
     result_stat = {0.5: {'tp': [], 'fp': [], 'gt': 0},
                    0.7: {'tp': [], 'fp': [], 'gt': 0}}
     result_stat_short = {0.5: {'tp': [], 'fp': [], 'gt': 0},
@@ -95,12 +100,30 @@ def main():
     coop_error_dict_long = {0.5: [], 0.7: []}
     coop_error_dict_middle = {0.5: [], 0.7: []}
     select_params_list = []
+    score_stat = {
+        '0.0-0.1': 0,
+        '0.1-0.2': 0,
+        '0.2-0.3': 0,
+        '0.3-0.4': 0,
+        '0.4-0.5': 0,
+        '0.5-0.6': 0,
+        '0.6-0.7': 0,
+        '0.7-0.8': 0,
+        '0.8-0.9': 0,
+        '0.9-1.0': 0
+    }
+    sum_pred_error = 0
 
 
     if opt.fusion_method != 'nofusion':
-        n_hypes = yaml_utils.load_yaml('../model/nofusion/config.yaml', None)
-        n_saved_path = '../model/nofusion/'
+        # if opt.rq_command == 'rq1':
+        # n_hypes = yaml_utils.load_yaml('model/nofusion/config.yaml', None)
+        # n_saved_path = 'model/nofusion/'
+        # else:
+        n_hypes = yaml_utils.load_yaml('model/late_fusion/config.yaml', None)
+        n_saved_path = 'model/nofusion'
 
+        n_hypes['validate_dir'] = hypes['validate_dir']
         n_opencood_dataset = build_dataset(n_hypes, visualize=True, train=False,
                                      isSim=opt.isSim, dataAugment=opt.data_augment)
         
@@ -286,11 +309,19 @@ def main():
             vis_aabbs_gt.append(o3d.geometry.TriangleMesh())
             vis_aabbs_pred.append(o3d.geometry.TriangleMesh())
             
+    select_data_indices = []
+    save_path = '/media/jlutripper/Samsung_T51/V2Vreal/Retrain/select_indices.txt'
+    with open(save_path, 'r') as file:
+        for line in file:
+            select_data_indices.append(int(line.rstrip()))
 
     if opt.fusion_method != 'nofusion' and \
             opt.data_select != 'formula':
         for i, (batch_data,  n_batch_data) in enumerate(zip(data_loader, n_data_loader)):
             print(f"id = {i}")
+            # if i not in select_data_indices:
+            #     continue
+
             with torch.no_grad():
                 # print(np.random.uniform(0, 1), 1)
                 torch.cuda.synchronize()
@@ -353,7 +384,7 @@ def main():
                     raise NotImplementedError('Only early, late and intermediate'
                                               'fusion is supported.')
                 
-                eval_utils.caluclate_tp_fp(pred_box_tensor,
+                sum_pred_error += eval_utils.caluclate_tp_fp(pred_box_tensor,
                                        pred_score,
                                        gt_box_tensor,
                                        result_stat,
@@ -382,18 +413,19 @@ def main():
                 #                        gt_box_tensor,
                 #                        result_stat,
                 #                        0.7,False,i)
-                # coop_error_7 = eval_utils.calculate_coop_error(det_box_tensor, det_score,
-                #                                                pred_box_tensor, pred_score,
-                #                                                gt_box_tensor, 0.7)
-                coop_error_short = eval_utils.calculate_coop_error(det_box_tensor, det_score,
+                coop_error_5, _ = eval_utils.calculate_coop_error(det_box_tensor, det_score,
+                                                               pred_box_tensor, pred_score,
+                                                               gt_box_tensor, 0.5, score_stat=score_stat)
+                # sum_pred_error += pred_err
+                coop_error_short, _ = eval_utils.calculate_coop_error(det_box_tensor, det_score,
                                                                pred_box_tensor, pred_score,
                                                                gt_box_tensor, 0.5, 
                                                                left_range=0, right_range=30)
-                coop_error_middle = eval_utils.calculate_coop_error(det_box_tensor, det_score,
+                coop_error_middle, _ = eval_utils.calculate_coop_error(det_box_tensor, det_score,
                                                                pred_box_tensor, pred_score,
                                                                gt_box_tensor, 0.5,
                                                                left_range=30, right_range=50)
-                coop_error_long = eval_utils.calculate_coop_error(det_box_tensor, det_score,
+                coop_error_long, _ = eval_utils.calculate_coop_error(det_box_tensor, det_score,
                                                                pred_box_tensor, pred_score,
                                                                gt_box_tensor, 0.5,
                                                                left_range=50, right_range=100)
@@ -479,7 +511,7 @@ def main():
                     raise NotImplementedError('Only early, late and intermediate'
                                               'fusion is supported.')
 
-                eval_utils.caluclate_tp_fp(pred_box_tensor,
+                sum_pred_error += eval_utils.caluclate_tp_fp(pred_box_tensor,
                                        pred_score,
                                        gt_box_tensor,
                                        result_stat,
@@ -539,9 +571,12 @@ def main():
     if opt.data_select != 'formula':
         print(f"data num = {len(coop_error_dict[0.5])}")
         print(f"coop error: avg={sum(coop_error_dict[0.5])}, \
-                            short={sum(coop_error_dict_short[0.5])}, \
-                            middle={sum(coop_error_dict_middle[0.5])}, \
-                            long={sum(coop_error_dict_long[0.5])}")
+                short = {sum(coop_error_dict_short[0.5])}, \
+                middle = {sum(coop_error_dict_middle[0.5])}, \
+                long = {sum(coop_error_dict_long[0.5])}")
+        # print(coop_error_dict)
+        print("predict errors = ", sum_pred_error)
+              
 
         eval_utils.eval_final_results(result_stat,
                                     opt.model_dir)
@@ -554,7 +589,8 @@ def main():
         eval_utils.eval_final_results(result_stat_long,
                                       opt.model_dir,
                                       "long")
-
+        print(sum(result_stat[0.5]['fp']))
+        # print(f"score = \n{score_stat}")
     if opt.show_sequence:
         vis.destroy_window()
 
