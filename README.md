@@ -14,10 +14,10 @@ You need to check the [V2V4real](https://mobility-lab.seas.ucla.edu/v2v4real/) w
 
 To set up the codebase environment, do the following steps:
 
-Create conda environment (python >= 3.7)
+Create conda environment (python >= 3.8)
 
 ```shell
-conda create -n v2v4real python=3.7
+conda create -n v2v4real python=3.9
 conda activate v2v4real
 ```
 

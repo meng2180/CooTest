@@ -126,7 +126,7 @@ def main():
             # to save the model,
             saved_path = train_utils.setup_train(hypes)
 
-    # record training
+    # record.md training
     writer = SummaryWriter(saved_path)
 
     # half precision training

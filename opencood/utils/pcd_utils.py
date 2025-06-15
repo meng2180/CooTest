@@ -32,15 +32,6 @@ def pcd_to_np(pcd_file):
 
     return np.asarray(pcd_np, dtype=np.float32)
 
-def np_to_pcd_and_save(pcd_file, pcd_np):
-    pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(pcd_np[:, :3])
-    reflectivity = pcd_np[:, 3].astype(np.float32)
-    pcd.colors = o3d.utility.Vector3dVector(np.column_stack((reflectivity,reflectivity,reflectivity)))
-    o3d.io.write_point_cloud(pcd_file, pcd, write_ascii=True)
-
-
-
 
 def mask_points_by_range(points, limit_range):
     """
@@ -131,7 +122,6 @@ def lidar_project(lidar_data, extrinsic):
                                  np.expand_dims(lidar_int, -1)))
 
     return projected_lidar
-
 
 
 def projected_lidar_stack(projected_lidar_list):

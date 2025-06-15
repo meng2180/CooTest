@@ -1,9 +1,9 @@
-﻿# this yaml is only for visualization
+# this yaml is only for visualization
 name: visualization
 
 yaml_parser: "load_voxel_params"
 root_dir: '/data/v2vreal/train'
-validate_dir: '/media/jlutripper/Samsung_T51/V2Vreal/test_03'
+validate_dir: '/data/v2vreal/test'
 
 train_params:
   batch_size: &batch_size 4

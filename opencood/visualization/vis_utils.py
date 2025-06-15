@@ -150,7 +150,7 @@ def bbx2linset(bbx_corner, order='hwl', color=(0, 0, 1)):
         line_set.lines = o3d.utility.Vector2iVector(lines)
         line_set.colors = o3d.utility.Vector3dVector(colors)
 
-        line_mesh1 = LineMesh(np.array(bbx), lines, colors, radius=0.075)
+        line_mesh1 = LineMesh(np.array(bbx), lines, colors, radius=0.1)
         line_mesh1_geoms = line_mesh1.cylinder_segments
 
         bbx_linset += [*line_mesh1_geoms]
@@ -306,7 +306,7 @@ def color_encoding(intensity, mode='intensity'):
     assert mode in ['intensity', 'z-value', 'constant', 'v2vreal']
 
     if mode == 'intensity':
-        intensity_col = 0.5 - np.log(intensity) / np.log(np.exp(-0.004 * 100))
+        intensity_col = 1.0 - np.log(intensity) / np.log(np.exp(-0.004 * 100))
         int_color = np.c_[
             np.interp(intensity_col, VID_RANGE, VIRIDIS[:, 0]),
             np.interp(intensity_col, VID_RANGE, VIRIDIS[:, 1]),
@@ -380,9 +380,8 @@ def visualize_single_sample_output_gt(pred_tensor,
 
         opt = vis.get_render_option()
         opt.line_width = 10
-        # background color
-        opt.background_color = [1.0, 1.0, 1.0]
-        opt.point_size = 2.5
+        opt.background_color = np.asarray([0, 0, 0])
+        opt.point_size = 1.0
 
         vis.add_geometry(pcd)
         for ele in pred:
@@ -396,31 +395,20 @@ def visualize_single_sample_output_gt(pred_tensor,
     origin_lidar = pcd
     if not isinstance(pcd, np.ndarray):
         origin_lidar = common_utils.torch_tensor_to_numpy(pcd)
-    if len(origin_lidar.shape) > 2:
-        origin_lidar = origin_lidar[0]
 
-    # origin_lidar_intcolor = \
-    #     color_encoding(origin_lidar[:, -1] if mode == 'intensity'
-    #                    else origin_lidar[:, -1], mode=mode)
-    
     origin_lidar_intcolor = \
-        color_encoding(origin_lidar[:, -1] if mode == 'intensity' or
-                                              mode == 'v2vreal'
-                       else origin_lidar[:, 2], mode='v2vreal')
+        color_encoding(origin_lidar[:, -1] if mode == 'intensity'
+                       else origin_lidar[:, -1], mode=mode)
     # left -> right hand
     origin_lidar[:, :1] = -origin_lidar[:, :1]
-
 
     o3d_pcd = o3d.geometry.PointCloud()
     o3d_pcd.points = o3d.utility.Vector3dVector(origin_lidar[:, :3])
     o3d_pcd.colors = o3d.utility.Vector3dVector(origin_lidar_intcolor)
-    # o3d_pcd.colors = o3d.utility.Vector3dVector(np.tile([0,1,0], (len(o3d_pcd.points), 1)))
 
     oabbs_pred = bbx2linset(pred_tensor, color=(1, 0, 0))
     #oabbs_pred = bbx2oabb(pred_tensor, color=(1, 0, 0))
-    oabbs_gt = bbx2linset(gt_tensor, color=(0, 0.5, 0))
-
-
+    oabbs_gt = bbx2linset(gt_tensor, color=(0, 1, 0))
 
     visualize_elements = [o3d_pcd] + oabbs_pred + oabbs_gt
     if show_vis:

@@ -1,7 +1,5 @@
 import torch
 import torch.nn as nn
-import random
-import opencood.data_utils.augmentor.augment_utils as augment
 
 from opencood.models.sub_modules.pillar_vfe import PillarVFE
 from opencood.models.sub_modules.point_pillar_scatter import PointPillarScatter
@@ -44,8 +42,6 @@ class PointPillarFCooper(nn.Module):
 
         if args['backbone_fix']:
             self.backbone_fix()
-        print("fcooper init!")
-        
 
     def backbone_fix(self):
         """
@@ -73,7 +69,6 @@ class PointPillarFCooper(nn.Module):
             p.requires_grad = False
 
     def forward(self, data_dict):
-        # print(data_dict.keys())
         voxel_features = data_dict['processed_lidar']['voxel_features']
         voxel_coords = data_dict['processed_lidar']['voxel_coords']
         voxel_num_points = data_dict['processed_lidar']['voxel_num_points']
@@ -94,17 +89,7 @@ class PointPillarFCooper(nn.Module):
         batch_dict = self.scatter(batch_dict)
         batch_dict = self.backbone(batch_dict)
 
-        # spatial_features_2d.shape = torch.Size([2, 256, 48, 176]) (num, channel, height, width)
         spatial_features_2d = batch_dict['spatial_features_2d']
-
-        # add lossy communication noise
-        if 'augment_op' in data_dict:
-            p = data_dict['p']
-            if data_dict['augment_op'] == 'chlossy':
-                spatial_features_2d = augment.chlossy_op(spatial_features_2d, p)
-            else:
-                spatial_features_2d = augment.lossy_op(spatial_features_2d, p)
-
         # downsample feature to reduce memory
         if self.shrink_flag:
             spatial_features_2d = self.shrink_conv(spatial_features_2d)

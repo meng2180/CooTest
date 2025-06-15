@@ -95,7 +95,7 @@ class BasePostprocessor(object):
         mask = \
             box_utils.get_mask_for_boxes_within_range_torch(gt_box3d_tensor)
         gt_box3d_tensor = gt_box3d_tensor[mask, :, :]
-        
+
         return gt_box3d_tensor
 
     def generate_object_center(self,

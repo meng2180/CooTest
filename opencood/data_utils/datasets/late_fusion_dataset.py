@@ -22,16 +22,14 @@ from opencood.utils.transformation_utils import x1_to_x2
 
 
 class LateFusionDataset(basedataset.BaseDataset):
-    def __init__(self, params, visualize, train=True, isSim=False, dataAugment=None):
-        super(LateFusionDataset, self).__init__(params, visualize, train, isSim, dataAugment)
+    def __init__(self, params, visualize, train=True, isSim=False):
+        super(LateFusionDataset, self).__init__(params, visualize, train, isSim)
         self.pre_processor = build_preprocessor(params['preprocess'],
                                                 train)
         self.post_processor = build_postprocessor(params['postprocess'], train)
-        print("lateinit")
 
     def __getitem__(self, idx):
         base_data_dict = self.retrieve_base_data(idx)
-
         if self.train:
             reformat_data_dict = self.get_item_train(base_data_dict)
         else:
@@ -55,19 +53,19 @@ class LateFusionDataset(basedataset.BaseDataset):
         """
         selected_cav_processed = {}
 
+        # filter lidar
         lidar_np = selected_cav_base['lidar_np']
         lidar_np = shuffle_points(lidar_np)
-        # Remove the lidar points out of the boundary.
         lidar_np = mask_points_by_range(lidar_np,
                                         self.params['preprocess'][
                                             'cav_lidar_range'])
+        # remove points that hit ego vehicle
         lidar_np = mask_ego_points(lidar_np)
 
         # generate the bounding box(n, 7) under the cav's space
         object_bbx_center, object_bbx_mask, object_ids = \
             self.post_processor.generate_object_center([selected_cav_base],
                                                        np.identity(4))
-
         # data augmentation
         lidar_np, object_bbx_center, object_bbx_mask = \
             self.augment(lidar_np, object_bbx_center, object_bbx_mask)
@@ -113,37 +111,10 @@ class LateFusionDataset(basedataset.BaseDataset):
 
         return processed_data_dict
 
-    '''
-    prcocessed_data_dict = {
-        'ego': {
-            'anchor_box':           <tensor>,
-            'object_bbx_center':    <tensor>,
-            'object_bbx_mask':      <tensor>,
-            'processed_lidar': {
-                'voxel_features':
-                'voxel_coords':
-                'voxel_num_points':
-            },
-            'label_dict': {
-                'targets':
-                'pos_equal_one':
-                'neg_equal_one':
-            },
-            'object_ids':       
-            'transformation_matrix':        <tensor_matrix>,
-            'gt_transformation_matrix':     <tensor_matrix>,
-            'origin_lidar':                 <numpy_pcd list>
-        },
-        '1': {
-        ...(同上)
-        }
-    }
-    '''
     def get_item_test(self, base_data_dict):
         processed_data_dict = OrderedDict()
         ego_id = -1
         ego_lidar_pose = []
-        # print(f"structe = {base_data_dict['0'].keys()}")
 
         # first find the ego vehicle's lidar pose
         for cav_id, cav_content in base_data_dict.items():
@@ -287,11 +258,8 @@ class LateFusionDataset(basedataset.BaseDataset):
         gt_box_tensor : torch.Tensor
             The tensor of gt bounding box.
         """
-        
         pred_box_tensor, pred_score = \
             self.post_processor.post_process(data_dict, output_dict)
-        
-        # groundtruth bounding box tensor, (N,8,3)
         gt_box_tensor = self.post_processor.generate_gt_bbx(data_dict)
 
         return pred_box_tensor, pred_score, gt_box_tensor
