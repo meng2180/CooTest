@@ -1,8 +1,6 @@
 name: point_pillar_late_fusion
-# root_dir: '/data/v2vreal/train'
-root_dir: '/media/jlutripper/Samsung_T51/V2Vreal/train/train'
-# validate_dir: '/data/v2vreal/validate'
-validate_dir: '/media/jlutripper/Samsung_T51/V2Vreal/test'
+root_dir: '/data/v2vreal/train'
+validate_dir: '/data/v2vreal/validate'
 
 yaml_parser: "load_point_pillar_params"
 

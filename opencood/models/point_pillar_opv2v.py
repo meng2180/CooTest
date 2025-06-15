@@ -1,7 +1,5 @@
 import torch
 import torch.nn as nn
-import random
-import opencood.data_utils.augmentor.augment_utils as augment
 
 from opencood.models.sub_modules.pillar_vfe import PillarVFE
 from opencood.models.sub_modules.point_pillar_scatter import PointPillarScatter
@@ -92,15 +90,6 @@ class PointPillarOPV2V(nn.Module):
         batch_dict = self.backbone(batch_dict)
 
         spatial_features_2d = batch_dict['spatial_features_2d']
-
-        # add lossy communication noise
-        if 'augment_op' in data_dict:
-            p = data_dict['p']
-            if data_dict['augment_op'] == 'chlossy':
-                spatial_features_2d = augment.chlossy_op(spatial_features_2d, p)
-            else:
-                spatial_features_2d = augment.lossy_op(spatial_features_2d, p)
-        
         # downsample feature to reduce memory
         if self.shrink_flag:
             spatial_features_2d = self.shrink_conv(spatial_features_2d)

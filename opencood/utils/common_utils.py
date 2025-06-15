@@ -134,53 +134,10 @@ def compute_iou(box, boxes):
 
     """
     # Calculate intersection areas
-    # iou = [box.intersection(b).area / box.union(b).area for b in boxes]
-    iou = []
-    for b in boxes:
-        if b == [(0., 0.), (0., 0.), (0., 0.), (0., 0.)]:
-            iou.append(0)
-        else:
-            iou.append(box.intersection(b).area / box.union(b).area)
+    iou = [box.intersection(b).area / box.union(b).area for b in boxes]
 
     return np.array(iou, dtype=np.float32)
 
-def compute_intersection_area(box, boxes):
-    result_list = [box.intersection(b).area for b in boxes]
-    return np.array(result_list, dtype=np.float32)
-
-def record_boxes_height(boxes):
-    heitht_dict = {'max': [],
-                   'min': []}
-    for i in range(boxes.shape[0]):
-        # calculate height
-        heitht_dict['max'].append(boxes[i, :, 2].max())
-        heitht_dict['min'].append(boxes[i, :, 2].min())
-    return heitht_dict
-
-def compute_area(box):
-    return box.area
-
-# calculate intersection volume of box and boxes list
-def compute_intersection_volume(box, boxes):
-    overlap_volumes = []
-    for b in boxes:
-        # 得到边框所有顶点在每个坐标分量上的最值, box.shape = (8, 3)
-        box_min_coords = np.min(box, axis=0)
-        box_max_coords = np.max(box, axis=0)
-        boxes_min_coords = np.min(b, axis=0)
-        boxes_max_coords = np.max(b, axis=0)
-        # print(box.shape)
-
-        # 计算交集的最小和最大坐标
-        min_coords_intersection = np.maximum(box_min_coords, boxes_min_coords)
-        max_coords_intersection = np.minimum(box_max_coords, boxes_max_coords)
-
-        # 计算交集的边长
-        intersection_side_lengths = np.maximum(0.0, max_coords_intersection - min_coords_intersection)
-
-        # 计算交集体积
-        overlap_volumes.append(np.prod(intersection_side_lengths, axis=-1))
-    return sum(overlap_volumes)
 
 def convert_format(boxes_array):
     """

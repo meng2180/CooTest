@@ -26,9 +26,6 @@ class DataAugmentor(object):
     """
 
     def __init__(self, augment_config, train=True, intermediate=False):
-        """
-        TODO: 把参数放这边吧
-        """
         self.data_augmentor_queue = []
         self.train = train
         self.augment_config = augment_config
@@ -37,6 +34,30 @@ class DataAugmentor(object):
             cur_augmentor = getattr(self, cur_cfg['NAME'])(config=cur_cfg)
             self.data_augmentor_queue.append(cur_augmentor)
 
+    def random_world_flip(self, data_dict=None, config=None):
+        if data_dict is None:
+            return partial(self.random_world_flip, config=config)
+
+        gt_boxes, gt_mask, points, flip = data_dict['object_bbx_center'], \
+                                          data_dict['object_bbx_mask'], \
+                                          data_dict['lidar_np'], \
+                                          data_dict['flip']
+        gt_boxes_valid = gt_boxes[gt_mask == 1]
+
+        for i, cur_axis in enumerate(config['ALONG_AXIS_LIST']):
+            assert cur_axis in ['x', 'y']
+            gt_boxes_valid, points = getattr(augment_utils,
+                                             'random_flip_along_%s' % cur_axis)(
+                gt_boxes_valid, points, flip[i] if flip is not None else flip
+            )
+
+        gt_boxes[:gt_boxes_valid.shape[0], :] = gt_boxes_valid
+
+        data_dict['object_bbx_center'] = gt_boxes
+        data_dict['object_bbx_mask'] = gt_mask
+        data_dict['lidar_np'] = points
+
+        return data_dict
 
     def random_world_rotation(self, data_dict=None, config=None):
         if data_dict is None:

@@ -5,6 +5,7 @@ import math
 
 import numpy as np
 
+
 def load_yaml(file, opt=None):
     """
     Load yaml file and return a dictionary.

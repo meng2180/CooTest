@@ -23,6 +23,6 @@ setup(
     author='Runsheng Xu',
     author_email='rxx3386@ucla.edu',
     description='v2v4real codebase',
-    long_description=open("README.md").read(),
+    long_description=open("README_old.md").read(),
     install_requires=_read_requirements_file(),
 )
