@@ -20,6 +20,7 @@ class VoxelPreprocessor(BasePreprocessor):
         self.vh = self.params['args']['vh']
         self.vd = self.params['args']['vd']
         self.T = self.params['args']['T']
+        print("voxel init!")
 
     def preprocess(self, pcd_np):
         """
@@ -36,14 +37,14 @@ class VoxelPreprocessor(BasePreprocessor):
         """
         data_dict = {}
 
-        # calculate the voxel coordinates
+        # calculate the voxel coordinates 计算体素坐标
         voxel_coords = ((pcd_np[:, :3] -
                          np.floor(np.array([self.lidar_range[0],
                                             self.lidar_range[1],
                                             self.lidar_range[2]])) / (
                              self.vw, self.vh, self.vd))).astype(np.int32)
 
-        # convert to  (D, H, W) as the paper
+        # convert to  (D, H, W) as the paper (Depth, Height, Width)
         voxel_coords = voxel_coords[:, [2, 1, 0]]
         voxel_coords, inv_ind, voxel_counts = np.unique(voxel_coords, axis=0,
                                                         return_inverse=True,

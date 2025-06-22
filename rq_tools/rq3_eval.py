@@ -17,7 +17,13 @@ from opencood.rq_eval.rq2_data_select import CooTest_method_result, V2X_Gen_meth
 from opencood.rq_eval.v2x_gen_utils import save_box_tensor, load_box_tensor, get_valid_param_dict, get_total_occ_and_dis
 
 
-def rq1_parser():
+def rq3_parser():
+    """
+    1. 读取数据
+    2. 分离数据
+    3. 统计评估结果
+    4. 合并结果
+    """
     parser = argparse.ArgumentParser(description='synthetic data generation')
     parser.add_argument('--model_dir', type=str, default=True,
                         help='Continued training path')
@@ -49,7 +55,7 @@ def rq1_parser():
 
 
 def main():
-    opt = rq1_parser()
+    opt = rq3_parser()
     dataset_dir = opt.dataset_dir
     model_dir = opt.model_dir
 
@@ -57,8 +63,8 @@ def main():
     # global feature lossy communication, channel-specific lossy communication, spatial dislocation
     OPERATOR_LIST = ['RN', 'SW', 'SG', 'CT', 'CL', 'GL', 'SM']  # operators
 
-    # merge scene data for rq1
-    rq1_dataset_dir = os.path.join(os.path.dirname(dataset_dir), 'rq1')
+    # merge scene data for rq3
+    rq1_dataset_dir = os.path.join(os.path.dirname(dataset_dir), 'rq3')
     rq1_source_dataset_dir = os.path.join(rq1_dataset_dir, 'source', 'merge_data')
 
     # '_dataset/rq1/source/merge_data/0,1'
@@ -66,27 +72,14 @@ def main():
 
     merge_scene_folders(dataset_dir, rq1_source_dataset_dir)
 
-    # RQ1_1: Use the specified model to transform each data for the test
-    ori_flag = False
-    for OPERATOR_NAME in OPERATOR_LIST:
-        # Statistical untransformed data results
-        if not ori_flag:
-            inference_result = rq_inference(model_dir, dataset_dir, 'NONE')
-            ori_flag = True
-            eval_utils.eval_final_results(inference_result, opt.model_dir)
-
-        inference_result = rq_inference(model_dir, dataset_dir, OPERATOR_NAME)
-        eval_utils.eval_final_results(inference_result, opt.model_dir)
-
-
     # RQ1_2: the "test" dataset is randomly assigned to seven target operators
-    result_stat_2 = {}
+    result_stat_3 = {}
     for OPERATOR_NAME in OPERATOR_LIST:
-        operator_result_stat = rq_inference(model_dir, dataset_dir, OPERATOR_NAME)
-        eval_utils.eval_final_results(result_stat_2, opt.model_dir)
-        result_stat_2 += operator_result_stat
+        rq_inference(model_dir, dataset_dir, OPERATOR_NAME)
+        operator_result_stat = eval_utils.eval_final_results(result_stat_3, opt.model_dir)
+        result_stat_3 += operator_result_stat
 
-    eval_utils.eval_final_results(result_stat_2, opt.model_dir)
+    eval_utils.eval_final_results(result_stat_3, opt.model_dir)
 
 if __name__ == '__main__':
     main()

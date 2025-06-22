@@ -65,11 +65,6 @@ def main():
         init_epoch, model = train_utils.load_saved_model(saved_path,
                                                          model)
 
-    # else:
-    #     init_epoch = 0
-    #     # if we train the model from scratch, we need to create a folder
-    #     # to save the model,
-    #     saved_path = train_utils.setup_train(hypes)
 
     # we assume gpu is necessary
     if torch.cuda.is_available():
