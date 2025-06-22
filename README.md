@@ -17,8 +17,8 @@ To set up the codebase environment, do the following steps:
 Create conda environment (python >= 3.8)
 
 ```shell
-conda create -n v2v4real python=3.9
-conda activate v2v4real
+conda create -n coo-test python=3.9
+conda activate coo-test
 ```
 
 Pytorch Installation (>= 1.12.0 Required)
@@ -66,85 +66,57 @@ model
 
 ### RQ1
 
-You need to get the detecting boxes and scores of nofusion first.
+You need to select different models and calculate the AP values for different transformations (including unchanged) results.
 
 ```shell
-python rq_test/rq1_inference.py --dataset_dir ${dataset}/rq1 --model_dir model/late_fusion--fusion_method nofusion
-```
-
-Generate transformation data and test the erroneous behaviors of cooperative perception tasks using MRs.
-
-```shell
-python rq_test/rq1_inference.py --dataset_dir ${dataset}/test --model_dir model/${MODEL}--fusion_method ${FUSION_STRATEGY} --data_augment True 
+python rq_tools/rq1_eval.py --dataset_dir ${dataset}/rq1 --model_dir ${model}/late_fusion
 ```
 
 Arguments Explanation:
 
 - `model_dir`: the path to your saved model, e.g. `model/early`, meaning you want to use "early_fusion "model for test. See [Tutorial 1: Config System](https://opencood.readthedocs.io/en/latest/md_files/config_tutorial.html) to learn more about the rules of the yaml files. 
-- `fusion_method`: indicate the fusion strategy, currently support 'nofusion', 'early', 'late', and 'intermediate'.
 - `dataset_dir`: the "test" dataset path.
 
-
+The output content includes the results of applying a single operator and the mixed  operator to the original dataset "test".
 
 ### RQ2
 
-#### 1. Split dataset
+#### This section includes the following steps:
 
-Half of the sequences are randomly selected and saved as a training set for retrain and a test set for testing.
-
-```
-$ python rq_test/rq2_dataset_split.py --dataset_dir ${dataset_path}
-```
-
-#### 2. Generate transformation data
-
-You need to get the detecting boxes and scores of nofusion first.
+1. Split the original dataset for training, inference, and testing respectively;
+2. Select and save data for retraining using V2X-oriented guided transformation;
+3. Generate augmented data and test the erroneous behaviors of cooperative perception tasks using MRs.
 
 ```shell
-python rq_test/rq2_inference.py --dataset_dir ${dataset}/rq2 --model_dir model/late_fusion--fusion_method nofusion
+python rq_tools/rq2_eval.py --dataset_dir ${dataset}/test --model_dir ${model}/${model_name}
 ```
 
-Generate augment data and test the erroneous behaviors of cooperative perception tasks using MRs.
-
-```shell
-python rq_test/rq2_inference.py --dataset_dir ${dataset}/test --model_dir model/${MODEL}--fusion_method ${FUSION_STRATEGY}
-```
-
-#### 3. Using V2X-oriented guided transformation select data for retrain
-
-You need to change the configuration file：
-
-```shell
-python rq_test/rq2_inference.py --model_dir ${CHECKPOINT_FOLDER} --fusion_method ${FUSION_STRATEGY} --data_select formula --data_augment True 
-```
-
-
+The selected data is saved in the `${dataset}/rq2/rq2_select` directory.
 
 ### RQ3
 
-#### Retrain  with transformed tests of rq2
+#### 1. Retrain  the models
 
 ```shell
-python rq_test/rq3_train.py --dataset_dir ${dataset}/rq2/rq2_select --model_dir model/${MODEL}
+python rq_tools/rq3_train.py --dataset_dir ${dataset}/rq2/rq2_select --model_dir ${model}/${model_name}
 ```
 
-#### Test the effect of retrain models
+#### 2. Test the effect of retrain models
 
 ```shell
-python rq_test/rq3_inference.py --model_dir ${CHECKPOINT_FOLDER} --fusion_method ${FUSION_STRATEGY} --data_select formula --data_augment True 
+python rq_tools/rq3_eval.py --model_dir ${model}/retrained/${model_name}
 ```
-
-
 
 ## Dataset structure
 
 After generate the transformation datasets, the recommended dataset format like this:
 
 ```shell
-├── v2v4real
+├── coo-test
 │   ├── test
 │   ├── rq1
-│      ├── rq1_det_box
+│      ├── rq1_1
+│      ├── rq1_2
 │   ├── rq2
 │      ├── rq2_select
 │      ├── rq2_det_box
