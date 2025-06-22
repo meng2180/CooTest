@@ -15,12 +15,6 @@ from opencood.rq_eval.v2x_gen_utils import save_box_tensor, load_box_tensor, get
 
 
 def cmd_parser():
-    """
-    1. 读取数据
-    2. 分离数据
-    3. 统计评估结果
-    4. 合并结果
-    """
     parser = argparse.ArgumentParser(description="synthetic data generation")
     parser.add_argument('--model_dir', type=str, required=True,
                         help='Continued training path')
