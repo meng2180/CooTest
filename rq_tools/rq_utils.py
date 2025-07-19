@@ -1,8 +1,24 @@
 import os
+import random
 import shutil
+from pathlib import Path
 
 
 def merge_scene_folders(dataset_dir, target_dir):
+    """
+    Merge the scene data of the test dataset into the new path.
+
+    Parameters
+    ----------
+    dataset_dir : str
+        Test Dataset path.
+
+    target_dir : str
+        Target path.
+
+    Returns
+    -------
+    """
     target_ego_dir = os.path.join(target_dir, '0')
     target_coop_dir = os.path.join(target_dir, '1')
     os.makedirs(target_ego_dir, exist_ok=True)
@@ -61,3 +77,60 @@ def merge_scene_folders(dataset_dir, target_dir):
                         os.path.join(target_coop_dir, new_name)
                     )
                 counter_coop += 1
+
+
+def split_files_randomly(dataset_dir, target_dir):
+    """
+    Randomly divide the files in the source directory into
+    seven groups by serial number and copy them to the destination directory.
+
+    Parameters
+    ----------
+    dataset_dir : str
+        Test Dataset path.
+
+    target_dir : str
+        Target path.
+
+    Returns
+    -------
+    """
+    OPERATOR_LIST = ['RN', 'SW', 'SG', 'CT', 'CL', 'GL', 'SM']
+    for i in OPERATOR_LIST:
+        os.makedirs(os.path.join(target_dir, i), exist_ok=True)
+
+    for source_subdir in ['0', '1']:
+        source_path = os.path.join(target_dir, source_subdir)
+        if not os.path.exists(source_path):
+            continue
+
+        file_indices = set()
+        for file in os.listdir(source_path):
+            if file.endswith(('.pcd', '.yaml')):
+                index = file.split('.')[0]
+                file_indices.add(index)
+
+        indices = list(file_indices)
+        random.shuffle(indices)
+        group_size = len(indices) // 7
+        groups = [indices[i * group_size: (i + 1) * group_size] for i in range(7)]
+
+        remainder = indices[7 * group_size:]
+        for i, index in enumerate(remainder):
+            groups[i].append(index)
+
+        for group_idx, group_indices in enumerate(groups):
+            target_dir = os.path.join(target_dir, str(group_idx), source_subdir)
+            os.makedirs(target_dir, exist_ok=True)
+
+            for index in group_indices:
+                for ext in ['.pcd', '.yaml']:
+                    source_file = os.path.join(source_path, f"{index}{ext}")
+                    if os.path.exists(source_file):
+                        shutil.copy2(source_file, target_dir)
+
+
+
+
+
+
