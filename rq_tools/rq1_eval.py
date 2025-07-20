@@ -1,20 +1,9 @@
-import argparse
-import statistics
-import sys
 import os
+import argparse
 
-import torch
-# from Cython.Utility.MemoryView import result
-from torch.utils.data import DataLoader
-from rq_tools.rq_utils import merge_scene_folders
+from rq_tools.rq_utils import merge_scene_folders, split_files_randomly
 from rq_tools.rq_inference import rq_inference
-
-import opencood.hypes_yaml.yaml_utils as yaml_utils
-from opencood.tools import train_utils, infrence_utils
-from opencood.data_utils.datasets import build_dataset
 from opencood.utils import eval_utils
-from opencood.rq_eval.rq2_data_select import CooTest_method_result, V2X_Gen_method
-from opencood.rq_eval.v2x_gen_utils import save_box_tensor, load_box_tensor, get_valid_param_dict, get_total_occ_and_dis
 
 
 def rq1_parser():
@@ -23,70 +12,77 @@ def rq1_parser():
                         help='Continued training path')
     parser.add_argument('--dataset_dir', type=str, required=True,
                         help='Test dataset dir')
-    # parser.add_argument('--fusion_method', required=True, type=str,
-    #                     default='late',
-    #                     help='choose one fusion method fo nofusion, late, early or intermediate')
-
     opt = parser.parse_args()
     return opt
 
 
-# def show_eval_result(result_stat, model_path, eval_range=""):
-#     eval_utils.eval_final_results(result_stat,
-#                                   opt.model_dir)
-#
-#     eval_utils.eval_final_results(result_stat_short,
-#                                   opt.model_dir,
-#                                   "short")
-#
-#     eval_utils.eval_final_results(result_stat_middle,
-#                                   opt.model_dir,
-#                                   "middle")
-#
-#     eval_utils.eval_final_results(result_stat_long,
-#                                   opt.model_dir,
-#                                   "long")
+def rq1_1_eval(dataset_path, model_path):
+    """
+    RQ1_1: Operators are applied to the test set data,
+    and the statistical model applies the AP results of each operator.
+    """
+    OPERATOR_LIST = ['RN', 'SW', 'SG', 'CT', 'CL', 'GL', 'SM', 'ORI']
+    model = os.path.basename(model_path)
+
+    if not os.path.exists(dataset_path):
+        raise FileNotFoundError(f"dataset path not exit: {dataset_path}")
+
+    # rebuild dataset path
+    dataset_dir = os.path.dirname(dataset_path)
+    rq1_dataset_dir = os.path.join(dataset_dir, 'rq1_1', model)
+
+    for OPERATOR_NAME in OPERATOR_LIST:
+        target_path = os.path.join(rq1_dataset_dir, OPERATOR_NAME, 'metamorph_data')
+        merge_scene_folders(dataset_path, target_path)
+
+        # Statistical untransformed data results
+        inference_result = rq_inference(model_path, dataset_path, OPERATOR_NAME)
+        eval_utils.eval_final_results(inference_result, model_path)
+
+
+def rq1_2_eval(dataset_path, model_path):
+    """
+    # RQ1_2: The test set is randomly assigned to each operator,
+    and the data are combined after mutation and the AP results are calculated in different detection ranges
+    """
+    OPERATOR_LIST = ['RN', 'SW', 'SG', 'CT', 'CL', 'GL', 'SM']
+    model = os.path.basename(model_path)
+
+    if not os.path.exists(dataset_path):
+        raise FileNotFoundError(f"dataset path not exit: {dataset_path}")
+
+
+    # merge scene data
+    dataset_dir = os.path.dirname(dataset_path)
+    rq1_dataset_dir = os.path.join(dataset_dir, 'rq1_2')
+    rq1_source_dataset_dir = os.path.join(rq1_dataset_dir, 'ORI', 'source')
+    merge_scene_folders(dataset_path, rq1_source_dataset_dir)
+
+    # rebuild dataset path
+    dataset_dir = os.path.dirname(dataset_path)
+    rq1_dataset_dir = os.path.join(dataset_dir, 'rq1_2', model)
+
+    split_files_randomly(rq1_source_dataset_dir, rq1_dataset_dir)
+
+    for OPERATOR_NAME in OPERATOR_LIST:
+        # Statistical untransformed data results
+        inference_result = rq_inference(model_path, dataset_path, OPERATOR_NAME)
+        eval_utils.eval_final_results(inference_result, model_path)
+
 
 
 def main():
+    """
+    Enter the Dataset Path and Model Path to complete the contents of rq1_1 and rq1_2
+    """
     opt = rq1_parser()
     dataset_dir = opt.dataset_dir
     model_dir = opt.model_dir
 
-    # Rain, snow, fog, communication delay,
-    # global feature lossy communication, channel-specific lossy communication, spatial dislocation
-    OPERATOR_LIST = ['RN', 'SW', 'SG', 'CT', 'CL', 'GL', 'SM']  # operators
+    rq1_1_eval(dataset_dir, model_dir)
 
-    # merge scene data for rq1
-    rq1_dataset_dir = os.path.join(os.path.dirname(dataset_dir), 'rq1')
-    rq1_source_dataset_dir = os.path.join(rq1_dataset_dir, 'source', 'merge_data')
+    rq1_2_eval(dataset_dir, model_dir)
 
-    # '_dataset/rq1/source/merge_data/0,1'
-    #  python rq_tools/rq1_eval.py --dataset_dir "/mnt/e/Workspace/LabProject/CooTestFin/_dataset/test" --model_dir "/mnt/e/Workspace/LabProject/CooTestFin/CooTest/model/late_fusion"
-
-    merge_scene_folders(dataset_dir, rq1_source_dataset_dir)
-
-    # RQ1_1: Use the specified model to transform each data for the test
-    ori_flag = False
-    for OPERATOR_NAME in OPERATOR_LIST:
-        # Statistical untransformed data results
-        if not ori_flag:
-            inference_result = rq_inference(model_dir, dataset_dir, 'NONE')
-            ori_flag = True
-            eval_utils.eval_final_results(inference_result, opt.model_dir)
-
-        inference_result = rq_inference(model_dir, dataset_dir, OPERATOR_NAME)
-        eval_utils.eval_final_results(inference_result, opt.model_dir)
-
-
-    # RQ1_2: the "test" dataset is randomly assigned to seven target operators
-    result_stat_2 = {}
-    for OPERATOR_NAME in OPERATOR_LIST:
-        operator_result_stat = rq_inference(model_dir, dataset_dir, OPERATOR_NAME)
-        eval_utils.eval_final_results(result_stat_2, opt.model_dir)
-        result_stat_2 += operator_result_stat
-
-    eval_utils.eval_final_results(result_stat_2, opt.model_dir)
 
 if __name__ == '__main__':
     main()

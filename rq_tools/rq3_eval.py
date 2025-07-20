@@ -18,12 +18,6 @@ from opencood.rq_eval.v2x_gen_utils import save_box_tensor, load_box_tensor, get
 
 
 def rq3_parser():
-    """
-    1. 读取数据
-    2. 分离数据
-    3. 统计评估结果
-    4. 合并结果
-    """
     parser = argparse.ArgumentParser(description='synthetic data generation')
     parser.add_argument('--model_dir', type=str, default=True,
                         help='Continued training path')
@@ -37,23 +31,6 @@ def rq3_parser():
     return opt
 
 
-# def show_eval_result(result_stat, model_path, eval_range=""):
-#     eval_utils.eval_final_results(result_stat,
-#                                   opt.model_dir)
-#
-#     eval_utils.eval_final_results(result_stat_short,
-#                                   opt.model_dir,
-#                                   "short")
-#
-#     eval_utils.eval_final_results(result_stat_middle,
-#                                   opt.model_dir,
-#                                   "middle")
-#
-#     eval_utils.eval_final_results(result_stat_long,
-#                                   opt.model_dir,
-#                                   "long")
-
-
 def main():
     opt = rq3_parser()
     dataset_dir = opt.dataset_dir
@@ -63,16 +40,7 @@ def main():
     # global feature lossy communication, channel-specific lossy communication, spatial dislocation
     OPERATOR_LIST = ['RN', 'SW', 'SG', 'CT', 'CL', 'GL', 'SM']  # operators
 
-    # merge scene data for rq3
-    rq1_dataset_dir = os.path.join(os.path.dirname(dataset_dir), 'rq3')
-    rq1_source_dataset_dir = os.path.join(rq1_dataset_dir, 'source', 'merge_data')
-
-    # '_dataset/rq1/source/merge_data/0,1'
-    #  python rq_tools/rq1_eval.py --dataset_dir "/mnt/e/Workspace/LabProject/CooTestFin/_dataset/test" --model_dir "/mnt/e/Workspace/LabProject/CooTestFin/CooTest/model/late_fusion"
-
-    merge_scene_folders(dataset_dir, rq1_source_dataset_dir)
-
-    # RQ1_2: the "test" dataset is randomly assigned to seven target operators
+    # RQ3: Test Retraining Results
     result_stat_3 = {}
     for OPERATOR_NAME in OPERATOR_LIST:
         rq_inference(model_dir, dataset_dir, OPERATOR_NAME)

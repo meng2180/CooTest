@@ -228,64 +228,6 @@ class BaseDataset(Dataset):
                 else:
                     self.scenario_database[i][cav_id]['ego'] = False
 
-        # RQ1: total operation data number = 1993
-        # if not augment_flag and self.dataAugment is not None:
-        #     if self.dataAugment == 285:
-        #         total_list = list(range(1993))
-        #         if not augment_flag and self.dataAugment is not None:
-        #             keys = list(self.augment_list.keys())
-        #             for i, key in enumerate(keys):
-        #                 if len(total_list) < 285:
-        #                     self.augment_list[key] = total_list
-        #                 else:
-        #                     for _ in range(285):
-        #                         random_index = random.choice(range(len(total_list)))
-        #                         self.augment_list[key].append(total_list.pop(random_index))
-        #         self.augment_list_t2 = None
-
-        #     # RQ2,3
-        #     elif self.dataAugment == 996:
-        #         keys = list(self.augment_list.keys())
-        #         data_num = self.scenario_data_number
-        #         half_list = sorted(random.sample(range(1992), 996))
-        #         for i, key in enumerate(keys):
-        #             self.augment_list[key] = half_list
-        #         for key in keys:
-        #             for i in range(1992):
-        #                 if i not in self.augment_list[key]:
-        #                     self.augment_list_t2[key].append(i)
- 
-        # if augment_flag:
-        #     augment_number = int(self.scenario_data_number / 7)
-        augment_keys = list(self.augment_params.keys())
-
-
-
-        # for i, key in enumerate(augment_keys):
-        #     if self.dataAugment is not None or \
-        #         os.path.basename(self.root_dir) == 'augment_data' and augment_flag:
-                # for _ in range(augment_number):
-                #     if key == 'rain_rate' and len(self.augment_params[key]) < augment_number:
-                #         self.augment_params[key].append(round(np.random.uniform(0.1, 10), 1))
-                #     elif key == 'snow_rate' and len(self.augment_params[key]) < augment_number:
-                #         self.augment_params[key].append(round(np.random.uniform(0.1, 2.4), 1))
-                #     elif key == 'visibility' and len(self.augment_params[key]) < augment_number:
-                #         self.augment_params[key].append(round(np.random.uniform(200, 1000), 1))
-                #     elif key == 'async' and len(self.augment_params[key]) < augment_number:
-                #         self.augment_params[key].append(round(np.random.uniform(1, 300), 1))
-                #     elif key == 'tran_x' and len(self.augment_params[key]) < augment_number:
-                #         self.augment_params[key].append(round(np.random.uniform(-0.2, 0.2), 4))
-                #     elif key == 'tran_y' and len(self.augment_params[key]) < augment_number:
-                #         self.augment_params[key].append(round(np.random.uniform(-0.2, 0.2), 4))
-                #     elif key == 'tran_z' and len(self.augment_params[key]) < augment_number:
-                #         self.augment_params[key].append(round(np.random.uniform(-0.2, 0.2), 4))
-                #     elif key =='yaw' and len(self.augment_params[key]) < augment_number:
-                #         # yaw = 1, rot 60 degree
-                #         self.augment_params[key].append(round(np.random.uniform(-0.033, 0.033), 4))
-                #     elif key == 'chlossy_p' and len(self.augment_params[key]) < augment_number:
-                #         self.augment_params[key].append(round(random.random(), 1))
-                #     elif key == 'lossy_p' and len(self.augment_params[key]) < augment_number:
-                #         self.augment_params[key].append(round(random.random(), 1))
         if os.path.basename(self.root_dir) == 'augment_data' and augment_flag:
             # save_path = os.path.join(self.root_dir, 'augment_params.txt')
             save_path = '/media/jlutripper/Samsung_T51/V2Vreal/Retrain/augment_params.txt'
@@ -840,8 +782,19 @@ class BaseDataset(Dataset):
                                       save_path,
                                       dataset=dataset)
         
-    def augment_data_select(self, idx, cur_ego_pose_flag=True):
+    def augment_data_select(self, idx):
+        """
+        Mutate the selected data.
 
+        Parameters
+        ----------
+        idx : dict
+
+        Returns
+        -------
+        batch : dict
+            Reformatted batch.
+        """
         for i, ele in enumerate(self.len_record):
             if idx < ele:
                 scenario_index = i
