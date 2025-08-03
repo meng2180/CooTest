@@ -1,7 +1,7 @@
 import os
 import random
 import shutil
-from pathlib import Path
+from collections import defaultdict
 
 
 def merge_scene_folders(dataset_dir, target_dir):
@@ -46,7 +46,6 @@ def merge_scene_folders(dataset_dir, target_dir):
                     file_groups[base] = []
                 file_groups[base].append(file)
 
-                # 按原始序号排序后复制
             for base in sorted(file_groups.keys()):
                 for file in file_groups[base]:
                     ext = os.path.splitext(file)[1]
@@ -67,7 +66,6 @@ def merge_scene_folders(dataset_dir, target_dir):
                     file_groups[base] = []
                 file_groups[base].append(file)
 
-                # 按原始序号排序后复制
             for base in sorted(file_groups.keys()):
                 for file in file_groups[base]:
                     ext = os.path.splitext(file)[1]
@@ -79,7 +77,7 @@ def merge_scene_folders(dataset_dir, target_dir):
                 counter_coop += 1
 
 
-def split_files_randomly(dataset_dir, target_dir):
+def split_files_randomly(dataset_dir, target_dir, split_list):
     """
     Randomly divide the files in the source directory into
     seven groups by serial number and copy them to the destination directory.
@@ -95,42 +93,123 @@ def split_files_randomly(dataset_dir, target_dir):
     Returns
     -------
     """
-    OPERATOR_LIST = ['RN', 'SW', 'SG', 'CT', 'CL', 'GL', 'SM']
-    for i in OPERATOR_LIST:
-        os.makedirs(os.path.join(target_dir, i), exist_ok=True)
+    file_groups = defaultdict(lambda: defaultdict(dict))
 
-    for source_subdir in ['0', '1']:
-        source_path = os.path.join(target_dir, source_subdir)
-        if not os.path.exists(source_path):
+    for op in split_list:
+        for subdir in ['0', '1']:
+            target_path = os.path.join(target_dir, op, 'metamorph_data', subdir)
+            if os.path.exists(target_path) and len(os.listdir(target_path)) != 0:
+                shutil.rmtree(target_path)
+            os.makedirs(target_path, exist_ok=True)
+
+    for subdir in ["0", "1"]:
+        subdir_path = os.path.join(dataset_dir, 'ORI', subdir)
+        if not os.path.exists(subdir_path):
             continue
 
-        file_indices = set()
-        for file in os.listdir(source_path):
-            if file.endswith(('.pcd', '.yaml')):
-                index = file.split('.')[0]
-                file_indices.add(index)
+        for filename in os.listdir(subdir_path):
+            if filename.endswith((".pcd", ".yaml")):
+                base_name = os.path.splitext(filename)[0]
+                file_type = "pcd" if filename.endswith(".pcd") else "yaml"
+                file_groups[base_name][subdir][file_type] = os.path.join(subdir_path, filename)
 
-        indices = list(file_indices)
-        random.shuffle(indices)
-        group_size = len(indices) // 7
-        groups = [indices[i * group_size: (i + 1) * group_size] for i in range(7)]
+    all_indices = sorted(file_groups.keys(), key=lambda x: int(x))
+    total_groups = len(all_indices)
+    print(f"A total of {total_groups} groups of files have been collected and are ready to be evenly distributed into {len(split_list)} directories...")
 
-        remainder = indices[7 * group_size:]
-        for i, index in enumerate(remainder):
-            groups[i].append(index)
+    if total_groups == 0:
+        print("No files!")
+        return
 
-        for group_idx, group_indices in enumerate(groups):
-            target_dir = os.path.join(target_dir, str(group_idx), source_subdir)
-            os.makedirs(target_dir, exist_ok=True)
+    random.shuffle(all_indices)
 
-            for index in group_indices:
-                for ext in ['.pcd', '.yaml']:
-                    source_file = os.path.join(source_path, f"{index}{ext}")
-                    if os.path.exists(source_file):
-                        shutil.copy2(source_file, target_dir)
+    num_operators = len(split_list)
+    groups_per_op = total_groups // num_operators
+    remainder = total_groups % num_operators
+
+    start_idx = 0
+    for i, op in enumerate(split_list):
+        end_idx = start_idx + groups_per_op + (1 if i < remainder else 0)
+        assigned_indices = all_indices[start_idx:end_idx]
+
+        for idx in assigned_indices:
+            group = file_groups[idx]
+
+            if "0" in group:
+                for file_type, src_path in group["0"].items():
+                    filename = os.path.basename(src_path)
+                    dest_path = os.path.join(
+                        target_dir, op, "metamorph_data", "0", filename
+                    )
+                    shutil.copy2(src_path, dest_path)
+
+            if "1" in group:
+                for file_type, src_path in group["1"].items():
+                    filename = os.path.basename(src_path)
+                    dest_path = os.path.join(
+                        target_dir, op, "metamorph_data", "1", filename
+                    )
+                    shutil.copy2(src_path, dest_path)
+
+        start_idx = end_idx
 
 
+def init_test_files(source_dir, target_dir):
+    """
+    Merge all files in the source directory into the target directory and renumber them in order.
 
+    Parameters
+    ----------
+        source_dir : str
+            Source dataset path.
+        target_dir : str
+            Target dataset path.
+    """
+    ori_dir = os.path.join(target_dir, "ORI")
+    for subdir in ["0", "1"]:
+        dest_path = os.path.join(ori_dir, subdir)
+        if os.path.exists(dest_path) and len(os.listdir(dest_path)) != 0:
+            return
+        os.makedirs(dest_path, exist_ok=True)
+
+
+    all_groups = defaultdict(list)
+
+    cav_dirs = [d for d in os.listdir(source_dir) if os.path.isdir(os.path.join(source_dir, d))]
+    cav_dirs.sort()
+
+    for cav in cav_dirs:
+        cav_path = os.path.join(source_dir, cav)
+
+        for subdir in ["0", "1"]:
+            subdir_path = os.path.join(cav_path, subdir)
+            if not os.path.exists(subdir_path):
+                continue
+
+            file_groups = defaultdict(dict)
+            for filename in os.listdir(subdir_path):
+                if filename.endswith((".pcd", ".yaml")):
+                    base_name = os.path.splitext(filename)[0]
+                    file_type = "pcd" if filename.endswith(".pcd") else "yaml"
+                    file_groups[base_name][file_type] = os.path.join(subdir_path, filename)
+
+            sorted_basenames = sorted(file_groups.keys(), key=lambda x: int(x))
+            for bn in sorted_basenames:
+                all_groups[subdir].append(file_groups[bn])
+
+    for subdir in ["0", "1"]:
+        for new_idx, group in enumerate(all_groups[subdir]):
+            new_basename = f"{new_idx:06d}"
+
+            if "pcd" in group:
+                src_pcd = group["pcd"]
+                dest_pcd = os.path.join(ori_dir, subdir, f"{new_basename}.pcd")
+                shutil.copy2(src_pcd, dest_pcd)
+
+            if "yaml" in group:
+                src_yaml = group["yaml"]
+                dest_yaml = os.path.join(ori_dir, subdir, f"{new_basename}.yaml")
+                shutil.copy2(src_yaml, dest_yaml)
 
 
 

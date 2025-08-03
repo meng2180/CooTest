@@ -173,3 +173,44 @@ def eval_final_results(result_stat, save_path, range=""):
     print('The range is %s, '
           'The Average Precision at IOU 0.5 is %.3f, '
           'The Average Precision at IOU 0.7 is %.3f' % (range,  ap_50, ap_70))
+
+
+def coo_method_result(det_boxes, det_score, pred_boxes):
+    """
+    CooTest data select method
+    """
+    if det_boxes is not None and pred_boxes is not None:
+        det_boxes = common_utils.torch_tensor_to_numpy(det_boxes)
+        det_score = common_utils.torch_tensor_to_numpy(det_score)
+        pred_boxes = common_utils.torch_tensor_to_numpy(pred_boxes)
+
+        pred_polygon_list = list(common_utils.convert_format(pred_boxes))
+        det_polygon_list = list(common_utils.convert_format(det_boxes))
+        det_score_list = np.array(det_score).tolist()
+
+        select_param_list = []
+        det_boxes_volumes = []
+
+        # calculate det boxes volume
+        for box in det_boxes:
+            box_lengths = []
+            for i in range(3):
+                lengths = box[:, i].max(axis=0) - box[:, i].min(axis=0)
+                box_lengths.append(lengths)
+            box_volume = np.prod(box_lengths)
+            det_boxes_volumes.append(box_volume)
+
+        for i, det_box in enumerate(det_boxes):
+            overlap_volume = common_utils.compute_intersection_volume(det_box, pred_boxes)
+
+            # guide method
+            select_param = (overlap_volume * det_score_list[i]) / \
+                           (len(det_polygon_list) * len(pred_polygon_list) * det_boxes_volumes[i])
+
+            select_param_list.append(select_param)
+
+    else:
+        print("boxes list is empty!")
+        return 0.0
+
+    return sum(select_param_list)
