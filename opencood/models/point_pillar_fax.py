@@ -10,6 +10,7 @@ from opencood.models.sub_modules.naive_compress import NaiveCompressor
 from opencood.models.sub_modules.swap_fusion_modules import \
     SwapFusionEncoder
 from opencood.models.sub_modules.fuse_utils import regroup
+from pcd_metamorph.data_metamorph import DataMetamorph
 
 
 class PointPillarFax(nn.Module):
@@ -88,6 +89,12 @@ class PointPillarFax(nn.Module):
         batch_dict = self.backbone(batch_dict)
 
         spatial_features_2d = batch_dict['spatial_features_2d']
+
+        # add flag operators 'CL' and 'GL' here
+        if 'operator' in data_dict:
+            data_meta = DataMetamorph(operator=data_dict['operator'], spatial_features=spatial_features_2d)
+            spatial_features_2d = data_meta.execute()
+
         # downsample feature to reduce memory
         if self.shrink_flag:
             spatial_features_2d = self.shrink_conv(spatial_features_2d)

@@ -171,3 +171,22 @@ def torch_tensor_to_numpy(torch_tensor):
     """
     return torch_tensor.numpy() if not torch_tensor.is_cuda else \
         torch_tensor.cpu().detach().numpy()
+
+
+# calculate intersection volume of box and boxes list
+def compute_intersection_volume(box, boxes):
+    overlap_volumes = []
+    for b in boxes:
+        box_min_coord = np.min(box, axis=0)
+        box_max_coord = np.max(box, axis=0)
+        boxes_min_coord = np.min(b, axis=0)
+        boxes_max_coord = np.max(b, axis=0)
+        # print(box.shape)
+
+        min_coord_intersection = np.maximum(box_min_coord, boxes_min_coord)
+        max_coord_intersection = np.minimum(box_max_coord, boxes_max_coord)
+
+        intersection_side_lengths = np.maximum(0.0, max_coord_intersection - min_coord_intersection)
+
+        overlap_volumes.append(np.prod(intersection_side_lengths, axis=-1))
+    return sum(overlap_volumes)

@@ -22,8 +22,8 @@ from opencood.utils.transformation_utils import x1_to_x2
 
 
 class EarlyFusionDataset(basedataset.BaseDataset):
-    def __init__(self, params, visualize, train=True, isSim=False, dataAugment=None):
-        super(EarlyFusionDataset, self).__init__(params, visualize, train, isSim, dataAugment)
+    def __init__(self, params, visualize, train=True, isSim=False, operator="ORI"):
+        super(EarlyFusionDataset, self).__init__(params, visualize, train, isSim, operator)
         self.pre_processor = build_preprocessor(params['preprocess'],
                                                 train)
         self.post_processor = build_postprocessor(params['postprocess'], train)
@@ -53,8 +53,9 @@ class EarlyFusionDataset(basedataset.BaseDataset):
 
         # loop over all CAVs to process information
         for cav_id, selected_cav_base in base_data_dict.items():
-            selected_cav_processed = self.get_item_single_car(selected_cav_base,
-                                                              ego_lidar_pose)
+            selected_cav_processed = self.get_item_single_car(
+                selected_cav_base,
+                ego_lidar_pose)
             # all these lidar and object coordinates are projected to ego
             # already.
             projected_lidar_stack.append(

@@ -88,7 +88,7 @@ The output content includes the results of applying a single operator and the mi
 3. Generate augmented data and test the erroneous behaviors of cooperative perception tasks using MRs.
 
 ```shell
-python rq_tools/rq2_eval.py --dataset_dir ${dataset}/test --model_dir ${model}/${model_name}
+python rq_tools/rq2.py --dataset_dir ${dataset}/test --model_dir ${model}/${model_name}
 ```
 
 The selected data is saved in the `${dataset}/rq2/rq2_select` directory.
@@ -104,7 +104,7 @@ python rq_tools/rq3_train.py --dataset_dir ${dataset}/rq2/rq2_select --model_dir
 #### 2. Test the effect of retrain models
 
 ```shell
-python rq_tools/rq3_eval.py --model_dir ${model}/retrained/${model_name}
+python rq_tools/rq3_eval.py --dataset_dir ${dataset}/rq2/test --model_dir ${model}/retrained/${model_name}
 ```
 
 ## Dataset structure
@@ -118,6 +118,8 @@ After generate the transformation datasets, the recommended dataset format like 
 │      ├── rq1_1
 │      ├── rq1_2
 │   ├── rq2
+│      ├── test 
+│      ├── train
 │      ├── rq2_select
 │      ├── rq2_det_box
 │   ├── rq3

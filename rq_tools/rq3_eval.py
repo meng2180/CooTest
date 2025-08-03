@@ -1,53 +1,56 @@
-import argparse
-import statistics
-import sys
 import os
+import shutil
+import argparse
 
-import torch
-# from Cython.Utility.MemoryView import result
-from torch.utils.data import DataLoader
-from rq_tools.rq_utils import merge_scene_folders
-from rq_tools.rq_inference import rq_inference
-
-import opencood.hypes_yaml.yaml_utils as yaml_utils
-from opencood.tools import train_utils, infrence_utils
-from opencood.data_utils.datasets import build_dataset
+from logger import CLogger
+from rq_tools.rq_utils import merge_scene_folders, split_files_randomly, init_test_files
+from rq_tools.rq_inference import inference
 from opencood.utils import eval_utils
-from opencood.rq_eval.rq2_data_select import CooTest_method_result, V2X_Gen_method
-from opencood.rq_eval.v2x_gen_utils import save_box_tensor, load_box_tensor, get_valid_param_dict, get_total_occ_and_dis
 
 
-def rq3_parser():
+def rq_parser():
     parser = argparse.ArgumentParser(description='synthetic data generation')
     parser.add_argument('--model_dir', type=str, default=True,
                         help='Continued training path')
     parser.add_argument('--dataset_dir', type=str, required=True,
                         help='Test dataset dir')
-    # parser.add_argument('--fusion_method', required=True, type=str,
-    #                     default='late',
-    #                     help='choose one fusion method fo nofusion, late, early or intermediate')
-
     opt = parser.parse_args()
     return opt
 
 
 def main():
-    opt = rq3_parser()
-    dataset_dir = opt.dataset_dir
-    model_dir = opt.model_dir
+    """
+    Enter the Dataset Path and Model Path to complete the contents of rq1_1 and rq1_2
+    """
+    opt = rq_parser()
+    dataset_path = opt.dataset_dir
+    model_path = opt.model_dir
 
-    # Rain, snow, fog, communication delay,
-    # global feature lossy communication, channel-specific lossy communication, spatial dislocation
-    OPERATOR_LIST = ['RN', 'SW', 'SG', 'CT', 'CL', 'GL', 'SM']  # operators
+    OPERATOR_LIST = ['RN', 'SW', 'FG', 'CT', 'CL', 'GL', 'SM']
+    model = os.path.basename(model_path)
 
-    # RQ3: Test Retraining Results
-    result_stat_3 = {}
+    if not os.path.exists(dataset_path):
+        raise FileNotFoundError(f"dataset path not exit: {dataset_path}")
+
+    # rebuild dataset path
+    dataset_dir = os.path.dirname(os.path.dirname(dataset_path))
+    rq3_dataset_dir = os.path.join(dataset_dir, 'rq3', model)
+    print(rq3_dataset_dir)
+
+    if os.path.exists(rq3_dataset_dir):
+        shutil.rmtree(rq3_dataset_dir)
+    os.makedirs(rq3_dataset_dir, exist_ok=True)
+
     for OPERATOR_NAME in OPERATOR_LIST:
-        rq_inference(model_dir, dataset_dir, OPERATOR_NAME)
-        operator_result_stat = eval_utils.eval_final_results(result_stat_3, opt.model_dir)
-        result_stat_3 += operator_result_stat
+        target_path = os.path.join(rq3_dataset_dir, OPERATOR_NAME, 'metamorph_data')
 
-    eval_utils.eval_final_results(result_stat_3, opt.model_dir)
+        # generate the metamorph dataset folder
+        merge_scene_folders(dataset_path, target_path)
+        meta_dataset_path = os.path.dirname(target_path)
+
+        # output the inference results of the data after applying the operator
+        result_stat = inference(model_path, meta_dataset_path, OPERATOR_NAME)
+        eval_utils.eval_final_results(result_stat, model_path)
 
 if __name__ == '__main__':
     main()

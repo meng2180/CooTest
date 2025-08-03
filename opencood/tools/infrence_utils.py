@@ -93,7 +93,7 @@ def inference_early_fusion(batch_data, model, dataset):
     return pred_box_tensor, pred_score, gt_box_tensor
 
 
-def inference_intermediate_fusion(batch_data, model, dataset):
+def inference_intermediate_fusion(batch_data, model, dataset, operator="ORI"):
     """
     Model inference for early fusion.
 
@@ -102,6 +102,7 @@ def inference_intermediate_fusion(batch_data, model, dataset):
     batch_data : dict
     model : opencood.object
     dataset : opencood.EarlyFusionDataset
+    operator : add metamorph operators
 
     Returns
     -------
@@ -110,7 +111,22 @@ def inference_intermediate_fusion(batch_data, model, dataset):
     gt_box_tensor : torch.Tensor
         The tensor of gt bounding box.
     """
-    return inference_early_fusion(batch_data, model, dataset)
+    # return inference_early_fusion(batch_data, model, dataset)
+
+    output_dict = OrderedDict()
+    cav_content = batch_data['ego']
+    # print(augment_tag)
+
+    # add flag for operators 'CL' and 'GL' here
+    if operator != "ORI":
+        cav_content['operator'] = operator
+    output_dict['ego'] = model(cav_content)
+
+    pred_box_tensor, pred_score, gt_box_tensor = \
+        dataset.post_process(batch_data,
+                             output_dict)
+
+    return pred_box_tensor, pred_score, gt_box_tensor
 
 
 def save_prediction_gt(pred_tensor, gt_tensor, pcd, timestamp, save_path):

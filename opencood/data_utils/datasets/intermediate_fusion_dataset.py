@@ -23,9 +23,9 @@ from opencood.data_utils.augmentor.data_augmentor import DataAugmentor
 
 
 class IntermediateFusionDataset(basedataset.BaseDataset):
-    def __init__(self, params, visualize, train=True, isSim=False, dataAugment=None):
+    def __init__(self, params, visualize, train=True, isSim=False, operator="ORI"):
         super(IntermediateFusionDataset, self). \
-            __init__(params, visualize, train, isSim, dataAugment)
+            __init__(params, visualize, train, isSim, operator)
         self.pre_processor = build_preprocessor(params['preprocess'],
                                                 train)
         self.post_processor = post_processor.build_postprocessor(
@@ -37,7 +37,6 @@ class IntermediateFusionDataset(basedataset.BaseDataset):
         self.data_augmentor = DataAugmentor(params['data_augment'],
                                             train,
                                             intermediate=True)
-        print("inter init!")
 
     def generate_augment(self):
         flip = [None, None, None]
@@ -127,7 +126,7 @@ class IntermediateFusionDataset(basedataset.BaseDataset):
             selected_cav_processed, void_lidar = self.get_item_single_car(
                 selected_cav_base,
                 ego_lidar_pose)
-            
+
             if void_lidar:
                 continue
 
@@ -167,7 +166,7 @@ class IntermediateFusionDataset(basedataset.BaseDataset):
         # merge preprocessed features from different cavs into the same dict
         cav_num = len(processed_features)
         merged_feature_dict = self.merge_features_to_dict(processed_features)
-        # print(merged_feature_dict)
+
         # generate the anchor boxes
         anchor_box = self.post_processor.generate_anchor_box()
 
@@ -189,19 +188,18 @@ class IntermediateFusionDataset(basedataset.BaseDataset):
             [spatial_correction_matrix, padding_eye], axis=0)
 
         processed_data_dict['ego'].update(
-                    {'object_bbx_center': object_bbx_center,
-                    'object_bbx_mask': mask,
-                    'object_ids': [object_id_stack[i] for i in unique_indices],
-                    'anchor_box': anchor_box,
-                    'processed_lidar': merged_feature_dict,
-                    'label_dict': label_dict,
-                    'cav_num': cav_num,
-                    'velocity': velocity,
-                    'time_delay': time_delay,
-                    'infra': infra,
-                    'spatial_correction_matrix': spatial_correction_matrix,
-                    'pairwise_t_matrix': pairwise_t_matrix})
-        # print(len(processed_data_dict['ego']['processed_lidar']['voxel_features']))
+            {'object_bbx_center': object_bbx_center,
+             'object_bbx_mask': mask,
+             'object_ids': [object_id_stack[i] for i in unique_indices],
+             'anchor_box': anchor_box,
+             'processed_lidar': merged_feature_dict,
+             'label_dict': label_dict,
+             'cav_num': cav_num,
+             'velocity': velocity,
+             'time_delay': time_delay,
+             'infra': infra,
+             'spatial_correction_matrix': spatial_correction_matrix,
+             'pairwise_t_matrix': pairwise_t_matrix})
 
         if self.visualize:
             processed_data_dict['ego'].update({'origin_lidar':

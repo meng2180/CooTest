@@ -33,6 +33,38 @@ def pcd_to_np(pcd_file):
     return np.asarray(pcd_np, dtype=np.float32)
 
 
+def np_to_pcd_and_save(target_path, pcd_np):
+    """
+    Save pcd to target path.
+
+    Parameters
+    ----------
+    pcd_file : str
+        The pcd file that contains the point cloud.
+
+    pcd_np : np.ndarray
+        The lidar data in numpy format, shape:(n, 4)
+
+    Returns
+    -------
+    """
+    try:
+        if isinstance(pcd_np, np.ndarray) and pcd_np.shape[1] == 4:
+            xyz = pcd_np[:, :3]
+            intensity = pcd_np[:, 3:4]
+            colors = np.hstack((intensity, intensity, intensity))  # intensity flat to color
+            pcd_bg = o3d.geometry.PointCloud()
+            pcd_bg.points = o3d.utility.Vector3dVector(xyz)
+            pcd_bg.colors = o3d.utility.Vector3dVector(colors)
+            o3d.io.write_point_cloud(target_path, pcd_bg)
+        else:
+            pcd_bg = o3d.geometry.PointCloud()
+            pcd_bg.points = o3d.utility.Vector3dVector(pcd_np)
+            o3d.io.write_point_cloud(target_path, pcd_bg, write_ascii=True)
+    except Exception as e:
+        print(f"save pcd to {target_path} failed: {e}")
+
+
 def mask_points_by_range(points, limit_range):
     """
     Remove the lidar points out of the boundary.
