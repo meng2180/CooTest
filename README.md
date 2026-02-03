@@ -148,7 +148,6 @@ keywords = {Autonomous driving system, Cooperative perception, Metamorphic testi
 location = {Vienna, Austria},
 series = {ISSTA 2024}
 }
-}
 ```
 
 
