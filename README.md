@@ -132,12 +132,22 @@ After generate the transformation datasets, the recommended dataset format like 
 ## Citation
 
 ```shell
-@inproceedings{guo2024cootest,
-  title={CooTest: An Automated Testing Approach for V2X Communication Systems},
-  author={Guo, An and Gao, Xinyu and Chen, Zhenyu and Xiao, Yuan and Liu, Jiakai and Ge, Xiuting and Sun, Weisong and Fang, Chunrong},
-  booktitle={Proceedings of the 33rd ACM SIGSOFT International Symposium on Software Testing and Analysis},
-  pages={1453--1465},
-  year={2024}
+@inproceedings{10.1145/3650212.3680373,
+author = {Guo, An and Gao, Xinyu and Chen, Zhenyu and Xiao, Yuan and Liu, Jiakai and Ge, Xiuting and Sun, Weisong and Fang, Chunrong},
+title = {CooTest: An Automated Testing Approach for V2X Communication Systems},
+year = {2024},
+isbn = {9798400706127},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3650212.3680373},
+doi = {10.1145/3650212.3680373},
+booktitle = {Proceedings of the 33rd ACM SIGSOFT International Symposium on Software Testing and Analysis},
+pages = {1453–1465},
+numpages = {13},
+keywords = {Autonomous driving system, Cooperative perception, Metamorphic testing, Software testing},
+location = {Vienna, Austria},
+series = {ISSTA 2024}
+}
 }
 ```
 
